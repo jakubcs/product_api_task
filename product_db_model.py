@@ -1,4 +1,4 @@
-from flask_misc import fl_mar, fl_sql
+from flask_misc import fl_sql
 from sqlalchemy.orm.exc import MultipleResultsFound
 
 NAME_MAX_LENGTH = 100
@@ -13,7 +13,9 @@ class ProductDbModel(fl_sql.Model):
     name = fl_sql.Column(fl_sql.String(NAME_MAX_LENGTH), nullable=False, unique=True)
     description = fl_sql.Column(fl_sql.String(DESCRIPTION_MAX_LENGTH), nullable=False)
 
-    # TODO define DB relationship with offers
+    offers = fl_sql.relationship('OfferDbModel', lazy='dynamic',
+                                 primaryjoin='ProductDbModel.prod_id == OfferDbModel.prod_id', backref='PRODUCTS',
+                                 overlaps='product, PRODUCTS')
 
     def __init__(self, name: str, description: str):
         """
@@ -106,10 +108,3 @@ class ProductDbModel(fl_sql.Model):
         else:
             message = f'Could not delete a product with ID = {prod_id} as it is not present in the database.'
             return 404, message
-
-
-class ProductDbSchema(fl_mar.SQLAlchemyAutoSchema):
-    class Meta:
-        model = ProductDbModel
-        load_instance = True
-        include_fk = True

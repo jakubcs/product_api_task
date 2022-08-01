@@ -1,7 +1,9 @@
 from flask import request
 from flask_restx import Resource, fields, Namespace
-from product_db_model import ProductDbModel, ProductDbSchema
+from product_db_model import ProductDbModel
+from product_db_schema import ProductDbSchema
 from marshmallow import ValidationError
+from offers_client import off_cli
 
 product_ns = Namespace('product', description='Product related operations')
 products_ns = Namespace('products', description='Products related operations')
@@ -101,5 +103,6 @@ class ProductList(Resource):
         except (ValidationError, ValueError) as e:
             return {'message': str(e)}, 400
         status_code, created_product = product_data.insert()
+        off_cli.register_product(created_product)
         print(product_schema.dump(created_product))
         return product_schema.dump(created_product), status_code
