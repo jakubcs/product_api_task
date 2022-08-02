@@ -2,7 +2,8 @@ from flask import Flask, Blueprint, jsonify
 from flask_restx import Api
 from flask_misc import fl_sql, fl_mar
 from product_api import product_ns, products_ns, Product, ProductList
-from offer_api import offers_ns, OfferList, ActiveOfferList, VendorOfferList, ProductOfferList
+from offer_api import offers_ns, OfferList, ActiveOfferList, VendorOfferList, ProductOfferList, \
+    ProductAndVendorOfferHistoryList
 from marshmallow import ValidationError
 from offers_client import off_cli
 
@@ -25,6 +26,7 @@ offers_ns.add_resource(OfferList, '')
 offers_ns.add_resource(ActiveOfferList, '/active')
 offers_ns.add_resource(ProductOfferList, '/product/<int:prod_id>')
 offers_ns.add_resource(VendorOfferList, '/vendor/<int:vendor_id>')
+offers_ns.add_resource(ProductAndVendorOfferHistoryList, '/product/<int:prod_id>/vendor/<int:vendor_id>')
 
 
 @app.before_first_request

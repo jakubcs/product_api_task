@@ -1,4 +1,5 @@
 from datetime import datetime
+from operator import and_
 from sqlalchemy.exc import MultipleResultsFound
 from flask_misc import fl_sql
 
@@ -37,7 +38,7 @@ class OfferDbModel(fl_sql.Model):
     def insert(self) -> "(int, OfferDbModel)":
         fl_sql.session.add(self)
         fl_sql.session.commit()
-        print(self.__repr__() + ' added successfully')
+        # print(self.__repr__() + ' added successfully')
         return 200, self
 
     @classmethod
@@ -58,17 +59,17 @@ class OfferDbModel(fl_sql.Model):
         print(offers)
         return 200, offers
 
-    # only one active offer at a time for specific vendor and product
     @classmethod
     def find_by_prod_and_vendor_id_active(cls, prod_id, vendor_id) -> "(int, OfferDbModel)":
         try:
+            # only one active offer at a time for specific vendor and product is expected
             offer = cls.query.filter_by(prod_id=prod_id, vendor_id=vendor_id, active=True).one_or_none()
             if offer is None:
                 status_code = 404
-                print(f'No active offer for product ID = {prod_id} by vendor ID = {vendor_id} found')
+                # print(f'No active offer for product ID = {prod_id} by vendor ID = {vendor_id} found')
             else:
                 status_code = 200
-                print(offer.__repr__() + ' found.')
+                # print(offer.__repr__() + ' found.')
         except MultipleResultsFound as e:
             print(e)
             offer = None
@@ -88,9 +89,19 @@ class OfferDbModel(fl_sql.Model):
         return 200, offers
 
     @classmethod
-    def delete_all(cls) -> "(int, str)":
-        cls.query.all().delete(synchronize_session=False)
-        fl_sql.session.commit()
-        message = 'Offer history deleted'
-        print(message)
-        return 200, message
+    def find_by_prod_id_and_vendor_id_between_dates(cls, prod_id: int, vendor_id: int, date_start: datetime,
+                                                    date_end: datetime) -> "(int, List[OfferDbModel])":
+        from_date = datetime.strptime(date_start, '%Y-%m-%dT%H:%M:%S.%f')
+        to_date = datetime.strptime(date_end, '%Y-%m-%dT%H:%M:%S.%f')
+        offers = cls.query.filter_by(prod_id=prod_id, vendor_id=vendor_id).filter(
+            and_(cls.date_created >= from_date, cls.date_created <= to_date)).order_by(cls.date_created.asc()).all()
+        print(offers)
+        return 200, offers
+
+    # @classmethod
+    # def delete_all(cls) -> "(int, str)":
+    #     cls.query.all().delete(synchronize_session=False)
+    #     fl_sql.session.commit()
+    #     message = 'Offer history deleted'
+    #     print('Offer history deleted')
+    #     return 200, message
