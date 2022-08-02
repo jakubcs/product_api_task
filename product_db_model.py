@@ -88,7 +88,7 @@ class ProductDbModel(fl_sql.Model):
         except MultipleResultsFound as e:
             print(e)
             ret_model = None
-            status_code = 400
+            status_code = 500
 
         return status_code, ret_model
 

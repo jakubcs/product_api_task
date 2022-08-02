@@ -26,7 +26,7 @@ class Product(Resource):
     @product_ns.response(200, 'Ok', product_model_res)
     @product_ns.response(404, 'Product not found')
     @product_ns.response(500, 'Unexpected DB issue')
-    def get(prod_id=None):
+    def get(prod_id: int) -> "(str, int)":
         """
         Get a product
         """

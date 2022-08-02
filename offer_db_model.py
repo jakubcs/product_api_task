@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+from sqlalchemy.exc import MultipleResultsFound
 from flask_misc import fl_sql
 
 
@@ -56,6 +57,23 @@ class OfferDbModel(fl_sql.Model):
         offers = cls.query.filter_by(prod_id=prod_id, vendor_id=vendor_id).all()
         print(offers)
         return 200, offers
+
+    # only one active offer at a time for specific vendor and product
+    @classmethod
+    def find_by_prod_and_vendor_id_active(cls, prod_id, vendor_id) -> "(int, OfferDbModel)":
+        try:
+            offer = cls.query.filter_by(prod_id=prod_id, vendor_id=vendor_id, active=True).one_or_none()
+            if offer is None:
+                status_code = 404
+                print(f'No active offer for product ID = {prod_id} by vendor ID = {vendor_id} found')
+            else:
+                status_code = 200
+                print(offer.__repr__() + ' found.')
+        except MultipleResultsFound as e:
+            print(e)
+            offer = None
+            status_code = 500
+        return status_code, offer
 
     @classmethod
     def find_all_active(cls) -> "(int, List[OfferDbModel])":
