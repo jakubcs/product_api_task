@@ -6,6 +6,7 @@ from offer_api import offers_ns, OfferList, ActiveOfferList, VendorOfferList, Pr
     ProductAndVendorOfferHistoryList
 from marshmallow import ValidationError
 from offers_client import off_cli
+from auth_api import auth_ns, RequestToken
 
 app = Flask(__name__)
 bluePrint = Blueprint('api', __name__, url_prefix='/api')
@@ -19,6 +20,7 @@ app.config['PROPAGATE_EXCEPTIONS'] = True
 api.add_namespace(product_ns)
 api.add_namespace(products_ns)
 api.add_namespace(offers_ns)
+api.add_namespace(auth_ns)
 
 product_ns.add_resource(Product, '/<int:prod_id>')
 products_ns.add_resource(ProductList, '')
@@ -27,6 +29,7 @@ offers_ns.add_resource(ActiveOfferList, '/active')
 offers_ns.add_resource(ProductOfferList, '/product/<int:prod_id>')
 offers_ns.add_resource(VendorOfferList, '/vendor/<int:vendor_id>')
 offers_ns.add_resource(ProductAndVendorOfferHistoryList, '/product/<int:prod_id>/vendor/<int:vendor_id>')
+auth_ns.add_resource(RequestToken, '')
 
 
 @app.before_first_request

@@ -4,6 +4,7 @@ from product_db_model import ProductDbModel
 from product_db_schema import ProductDbSchema
 from marshmallow import ValidationError
 from offers_client import off_cli
+from auth_api import evaluate_token
 
 product_ns = Namespace('product', description='Product related operations')
 products_ns = Namespace('products', description='Products related operations')
@@ -30,6 +31,9 @@ class Product(Resource):
         """
         Get a product
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         status_code, product = ProductDbModel.find_by_id(prod_id)
         if status_code == 200:
             return product_schema.dump(product), status_code
@@ -46,6 +50,9 @@ class Product(Resource):
         """
         Delete a product
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         status_code, message = ProductDbModel.delete_by_id(prod_id)
         return {'message': message}, status_code
 
@@ -58,6 +65,9 @@ class Product(Resource):
         """
         Update a product
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         status_code, product = ProductDbModel.find_by_id(prod_id)
         if status_code == 200:
             req_data = request.get_json()
@@ -82,6 +92,9 @@ class ProductList(Resource):
         """
         Get list of all products
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         status_code, product_list = ProductDbModel.find_all()
         return product_list_schema.dump(product_list), status_code
 
@@ -93,6 +106,9 @@ class ProductList(Resource):
         """
         Create a new product
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         product_json = request.get_json()
         name = product_json['name']
         status_code, found_product = ProductDbModel.find_by_name_exact(name)

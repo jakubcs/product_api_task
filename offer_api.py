@@ -4,6 +4,7 @@ from flask import request
 from flask_restx import Resource, fields, Namespace
 from offer_db_model import OfferDbModel
 from offer_db_schema import OfferDbSchema
+from auth_api import evaluate_token
 
 offers_ns = Namespace('offers', description='Offers related operations')
 
@@ -37,6 +38,9 @@ class OfferList(Resource):
         """
         Get list of all offers
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         status_code, offer_list = OfferDbModel.find_all()
         return offer_list_schema.dump(offer_list), status_code
 
@@ -49,6 +53,9 @@ class ActiveOfferList(Resource):
         """
         Get list of all active offers
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         status_code, offer_list = OfferDbModel.find_all_active()
         return offer_list_schema.dump(offer_list), status_code
 
@@ -61,6 +68,9 @@ class VendorOfferList(Resource):
         """
         Get list of all offers for given vendor ID
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         status_code, offer_list = OfferDbModel.find_by_vendor_id(vendor_id)
         return offer_list_schema.dump(offer_list), status_code
 
@@ -74,6 +84,9 @@ class ProductOfferList(Resource):
         """
         Get list of all offers for given product ID
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         status_code, offer_list = OfferDbModel.find_by_prod_id(prod_id)
         return offer_list_schema.dump(offer_list), status_code
 
@@ -107,6 +120,9 @@ class ProductAndVendorOfferHistoryList(Resource):
         """
         Get price history of a specific product offered by a specific vendor
         """
+        msg, auth_check = evaluate_token(request.headers.get('Bearer'))
+        if auth_check != 200:
+            return msg, auth_check
         date_interval_json = request.get_json()
         date_start = date_interval_json['date_start']
         date_end = date_interval_json['date_end']
