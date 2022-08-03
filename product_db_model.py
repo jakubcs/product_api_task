@@ -1,5 +1,4 @@
 from flask_misc import fl_sql
-from sqlalchemy.orm.exc import MultipleResultsFound
 
 NAME_MAX_LENGTH = 100
 DESCRIPTION_MAX_LENGTH = 200
@@ -39,72 +38,36 @@ class ProductDbModel(fl_sql.Model):
     def __repr__(self):
         return f'Product prod_id = {self.prod_id}, name = "{self.name}", description = "{self.description}"'
 
-    def insert(self) -> "(int, ProductDbModel)":
+    def insert(self) -> "bool":
         fl_sql.session.add(self)
         fl_sql.session.commit()
-        print(self.__repr__() + ' added successfully.')
-        return 200, self
+        return True
 
-    def update(self, data) -> "(int, ProductDbModel)":
-        message = f'Product with ID = {self.prod_id} updated fields:'
+    def update(self, data) -> "bool":
         for key, value in data.items():
             setattr(self, key, value)
-            message = message + f' {key} = {value},'
-        message = message[:-1] + '.'
         fl_sql.session.commit()
-        print(message)
-        return 200, self
+        return True
 
     @classmethod
-    def find_by_id(cls, prod_id: int) -> "(int, ProductDbModel)":
+    def find_by_id(cls, prod_id: int) -> "ProductDbModel":
         # We assume that the product ID is unique in used DB; if not, there is something wrong
-        try:
-            ret_model = cls.query.filter_by(prod_id=prod_id).one_or_none()
-            if ret_model is None:
-                status_code = 404
-                print(f'Product with ID = {prod_id} not found.')
-            else:
-                status_code = 200
-                print(ret_model.__repr__() + ' found.')
-        except MultipleResultsFound as e:
-            print(e)
-            ret_model = None
-            status_code = 500
-
-        return status_code, ret_model
+        return cls.query.filter_by(prod_id=prod_id).one_or_none()
 
     # TODO refactor with above?
     @classmethod
-    def find_by_name_exact(cls, name: str) -> "(int, ProductDbModel)":
+    def find_by_name_exact(cls, name: str) -> "ProductDbModel":
         # We assume that the product name is unique in used DB; if not, there is something wrong
-        try:
-            ret_model = cls.query.filter_by(name=name).one_or_none()
-            if ret_model is None:
-                status_code = 404
-                print(f'Product with name = {name} not found.')
-            else:
-                status_code = 200
-                print(ret_model.__repr__() + ' found.')
-        except MultipleResultsFound as e:
-            print(e)
-            ret_model = None
-            status_code = 500
-
-        return status_code, ret_model
+        return cls.query.filter_by(name=name).one_or_none()
 
     @classmethod
-    def find_all(cls) -> "(int, List[ProductDbModel])":
-        products = cls.query.all()
-        print(products)
-        return 200, products
+    def find_all(cls) -> "List[ProductDbModel]":
+        return cls.query.all()
 
     @classmethod
-    def delete_by_id(cls, prod_id: int) -> "(int, str)":
+    def delete_by_id(cls, prod_id: int) -> "bool":
         deleted = cls.query.filter_by(prod_id=prod_id).delete(synchronize_session=False)
         if deleted:
             fl_sql.session.commit()
-            message = f'Product with ID = {prod_id} successfully deleted'
-            return 200, message
-        else:
-            message = f'Could not delete a product with ID = {prod_id} as it is not present in the database.'
-            return 404, message
+            return True
+        return False

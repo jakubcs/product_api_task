@@ -3,7 +3,6 @@ import time
 import requests
 import sqlalchemy.exc
 from flask import Flask
-from flask_misc import fl_sql
 from product_db_schema import ProductDbSchema
 from offer_db_model import OfferDbModel
 from offer_db_schema import OfferDbSchema
@@ -39,7 +38,7 @@ class OffersClient(threading.Thread):
         with self.app.app_context():
             while not self.exit_loop:
                 try:
-                    pd_sc, product_list = ProductDbModel.find_all()
+                    product_list = ProductDbModel.find_all()
                 except sqlalchemy.exc.OperationalError:
                     time.sleep(1)
                     continue
@@ -53,7 +52,7 @@ class OffersClient(threading.Thread):
                                                       items_in_stock=item['items_in_stock'], prod_id=product_id)
                             if offer_data.items_in_stock == 0:
                                 continue
-                            query_sc, query_data = OfferDbModel.find_by_prod_and_vendor_id_active(
+                            query_data = OfferDbModel.find_by_prod_and_vendor_id_active(
                                 prod_id=offer_data.prod_id, vendor_id=offer_data.vendor_id)
                             # same product from the same vendor exists and is active? deactivate it
                             if query_data is not None:
@@ -62,12 +61,12 @@ class OffersClient(threading.Thread):
                                         query_data.items_in_stock != offer_data.items_in_stock:
                                     print(f'Deactivate: {query_data}')
                                     setattr(query_data, 'active', False)
-                                    status_code, created_offer = offer_data.insert()
-                                    if status_code != 200:
+                                    is_inserted = offer_data.insert()
+                                    if not is_inserted:
                                         print(f'Could not insert offer = {offer_data.__repr__()}')
                             else:
-                                status_code, created_offer = offer_data.insert()
-                                if status_code != 200:
+                                is_inserted = offer_data.insert()
+                                if not is_inserted:
                                     print(f'Could not insert offer = {offer_data.__repr__()}')
                     else:
                         print(f'Offers service request returned {response.status_code} status code!')

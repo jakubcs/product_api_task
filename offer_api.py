@@ -5,6 +5,7 @@ from flask_restx import Resource, fields, Namespace
 from offer_db_model import OfferDbModel
 from offer_db_schema import OfferDbSchema
 from auth_api import evaluate_token
+from flask_misc import RESPONSE200, RESPONSE401, RESPONSE403
 
 offers_ns = Namespace('offers', description='Offers related operations')
 
@@ -33,62 +34,69 @@ date_interval_item = offers_ns.model(name='DateIntervalItem', model=date_interva
 class OfferList(Resource):
     @staticmethod
     @offers_ns.doc('Get all offers')
-    @offers_ns.response(200, 'Ok', [offer_model_res])
+    @offers_ns.response(200, RESPONSE200, [offer_model_res])
+    @offers_ns.response(401, RESPONSE401)
+    @offers_ns.response(403, RESPONSE403)
     def get() -> "(str, int)":
         """
         Get list of all offers
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
-            return msg, auth_check
-        status_code, offer_list = OfferDbModel.find_all()
-        return offer_list_schema.dump(offer_list), status_code
+            return {'message': msg}, auth_check
+        offer_list = OfferDbModel.find_all()
+        return offer_list_schema.dump(offer_list), 200
 
 
 class ActiveOfferList(Resource):
     @staticmethod
     @offers_ns.doc('Get all active offers')
-    @offers_ns.response(200, 'Ok', [offer_model_res])
+    @offers_ns.response(200, RESPONSE200, [offer_model_res])
+    @offers_ns.response(401, RESPONSE401)
+    @offers_ns.response(403, RESPONSE403)
     def get() -> "(str, int)":
         """
         Get list of all active offers
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
-            return msg, auth_check
-        status_code, offer_list = OfferDbModel.find_all_active()
-        return offer_list_schema.dump(offer_list), status_code
+            return {'message': msg}, auth_check
+        offer_list = OfferDbModel.find_all_active()
+        return offer_list_schema.dump(offer_list), 200
 
 
 class VendorOfferList(Resource):
     @staticmethod
     @offers_ns.doc('Get all offers by vendor ID')
-    @offers_ns.response(200, 'Ok', [offer_model_res])
+    @offers_ns.response(200, RESPONSE200, [offer_model_res])
+    @offers_ns.response(401, RESPONSE401)
+    @offers_ns.response(403, RESPONSE403)
     def get(vendor_id: int) -> "(str, int)":
         """
         Get list of all offers for given vendor ID
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
-            return msg, auth_check
-        status_code, offer_list = OfferDbModel.find_by_vendor_id(vendor_id)
-        return offer_list_schema.dump(offer_list), status_code
+            return {'message': msg}, auth_check
+        offer_list = OfferDbModel.find_by_vendor_id(vendor_id)
+        return offer_list_schema.dump(offer_list), 200
 
 
 class ProductOfferList(Resource):
     @staticmethod
     @offers_ns.doc('Get all offers by product ID')
-    @offers_ns.response(200, 'Ok', [offer_model_res])
-    @offers_ns.response(404, 'Not found', str)
+    @offers_ns.response(200, RESPONSE200, [offer_model_res])
+    @offers_ns.response(401, RESPONSE401)
+    @offers_ns.response(403, RESPONSE403)
     def get(prod_id: int) -> "(str, int)":
         """
         Get list of all offers for given product ID
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
-            return msg, auth_check
-        status_code, offer_list = OfferDbModel.find_by_prod_id(prod_id)
-        return offer_list_schema.dump(offer_list), status_code
+            return {'message': msg}, auth_check
+        offer_list = OfferDbModel.find_by_prod_id(prod_id)
+        return offer_list_schema.dump(offer_list), 200
 
 
 class PriceHistoryItem:
@@ -115,19 +123,20 @@ class ProductAndVendorOfferHistoryList(Resource):
     @staticmethod
     @offers_ns.expect(date_interval_item)
     @offers_ns.doc('Get the price history of a product for specific vendor')
-    @offers_ns.response(200, 'Ok', price_history_model)
+    @offers_ns.response(200, RESPONSE200, price_history_model)
+    @offers_ns.response(401, RESPONSE401)
+    @offers_ns.response(403, RESPONSE403)
     def post(prod_id: int, vendor_id: int) -> "(str, int)":
         """
         Get price history of a specific product offered by a specific vendor
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
-            return msg, auth_check
+            return {'message': msg}, auth_check
         date_interval_json = request.get_json()
         date_start = date_interval_json['date_start']
         date_end = date_interval_json['date_end']
-        status_code, offer_list = OfferDbModel.find_by_prod_id_and_vendor_id_between_dates(prod_id, vendor_id,
-                                                                                           date_start, date_end)
+        offer_list = OfferDbModel.find_by_prod_id_and_vendor_id_between_dates(prod_id, vendor_id, date_start, date_end)
         if len(offer_list) == 0:
             price_history = PriceHistory(prod_id=prod_id, vendor_id=vendor_id, history=[])
             return price_history.to_json(), 200
@@ -137,4 +146,4 @@ class ProductAndVendorOfferHistoryList(Resource):
             price_history_data.append(PriceHistoryItem(price=offer.price, date_created=str(offer.date_created)))
         price_history = PriceHistory(prod_id=prod_id, vendor_id=vendor_id, history=price_history_data)
         price_history.price_change = (offer.price - offer_list[0].price) / offer.price * 100
-        return price_history.to_json(), status_code
+        return price_history.to_json(), 200

@@ -12,9 +12,9 @@ secret_token = 'very_secret_key'
 
 def evaluate_token(token: str) -> "(str, int)":
     if token is None:
-        return 'Unauthorized request', 401
+        return 'Unauthorized request - use valid bearer token to authorize', 401
     elif token != secret_token:
-        return 'Forbidden access', 403
+        return 'Forbidden access - use valid bearer token to authorize', 403
     else:
         return 'Ok', 200
 
