@@ -1,6 +1,7 @@
 import threading
 import time
 import requests
+import sqlalchemy.exc
 from flask import Flask
 from flask_misc import fl_sql
 from product_db_schema import ProductDbSchema
@@ -37,7 +38,11 @@ class OffersClient(threading.Thread):
         self.exit_loop = False
         with self.app.app_context():
             while not self.exit_loop:
-                pd_sc, product_list = ProductDbModel.find_all()
+                try:
+                    pd_sc, product_list = ProductDbModel.find_all()
+                except sqlalchemy.exc.OperationalError:
+                    time.sleep(1)
+                    continue
                 for product in product_list:
                     product_id = product.prod_id
                     response = requests.get(self.base_url + f'/products/{product_id}/offers',
@@ -52,8 +57,14 @@ class OffersClient(threading.Thread):
                                 prod_id=offer_data.prod_id, vendor_id=offer_data.vendor_id)
                             # same product from the same vendor exists and is active? deactivate it
                             if query_data is not None:
-                                setattr(query_data, 'active', False)
-                                fl_sql.session.commit()
+                                # unless it has the same price and items in stock -> we don't need duplicates
+                                if query_data.price != offer_data.price or \
+                                        query_data.items_in_stock != offer_data.items_in_stock:
+                                    print(f'Deactivate: {query_data}')
+                                    setattr(query_data, 'active', False)
+                                    status_code, created_offer = offer_data.insert()
+                                    if status_code != 200:
+                                        print(f'Could not insert offer = {offer_data.__repr__()}')
                             else:
                                 status_code, created_offer = offer_data.insert()
                                 if status_code != 200:
