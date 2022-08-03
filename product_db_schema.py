@@ -1,4 +1,5 @@
 from flask_misc import fl_mar
+from offer_db_schema import OfferDbSchema
 from product_db_model import ProductDbModel
 
 

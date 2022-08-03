@@ -66,7 +66,7 @@ class ProductDbModel(fl_sql.Model):
 
     @classmethod
     def delete_by_id(cls, prod_id: int) -> "bool":
-        deleted = cls.query.filter_by(prod_id=prod_id).delete(synchronize_session=False)
+        deleted = cls.query.filter_by(prod_id=prod_id).delete(synchronize_session='fetch')
         if deleted:
             fl_sql.session.commit()
             return True

@@ -5,6 +5,7 @@ fl_mar = Marshmallow()
 fl_sql = SQLAlchemy()
 
 RESPONSE200 = 'Ok'
+RESPONSE201 = 'Resource created successfully'
 RESPONSE204 = 'Resource deleted successfully'
 RESPONSE400 = 'Bad request'
 RESPONSE401 = 'Unauthorized access'

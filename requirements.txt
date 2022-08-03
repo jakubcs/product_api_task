@@ -7,3 +7,4 @@ flask-restx
 flask-marshmallow>=0.12.0
 flask-sqlalchemy
 marshmallow-sqlalchemy
+pytest

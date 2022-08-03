@@ -6,7 +6,7 @@ from product_db_schema import ProductDbSchema
 from marshmallow import ValidationError
 from offers_client import off_cli
 from auth_api import evaluate_token
-from flask_misc import RESPONSE200, RESPONSE204, RESPONSE400, RESPONSE401, RESPONSE403, RESPONSE500
+from flask_misc import RESPONSE200, RESPONSE201, RESPONSE204, RESPONSE400, RESPONSE401, RESPONSE403, RESPONSE500
 
 product_ns = Namespace('product', description='Product related operations')
 products_ns = Namespace('products', description='Products related operations')
@@ -115,7 +115,7 @@ class ProductList(Resource):
 
     @products_ns.expect(product_model)
     @products_ns.doc('Create a product')
-    @products_ns.response(200, RESPONSE200, product_model_res)
+    @products_ns.response(201, RESPONSE201, product_model_res)
     @products_ns.response(400, RESPONSE400)
     @products_ns.response(401, RESPONSE401)
     @products_ns.response(403, RESPONSE403)
@@ -146,4 +146,4 @@ class ProductList(Resource):
         if not is_created:
             return {'message': 'Internal server error'}, 500
         off_cli.register_product(product_data)
-        return product_schema.dump(product_data), 200
+        return product_schema.dump(product_data), 201
