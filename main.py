@@ -10,7 +10,8 @@ from auth_api import auth_ns, RequestToken
 
 app = Flask(__name__)
 bluePrint = Blueprint('api', __name__, url_prefix='/api')
-api = Api(bluePrint, doc='/doc', title='Sample Flask-RestPlus Application')
+api = Api(bluePrint, doc='/doc', title='Product API task',
+          description='Methods of the API are using token based authentication.')
 app.register_blueprint(bluePrint)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'

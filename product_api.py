@@ -26,7 +26,7 @@ product_model_res = products_ns.model(name='ProductWithId', model=product_body_r
 class Product(Resource):
     @staticmethod
     @product_ns.doc('Get a product')
-    @product_ns.response(200, RESPONSE200, product_body_res)
+    @product_ns.response(200, RESPONSE200, product_model_res)
     @product_ns.response(401, RESPONSE401)
     @product_ns.response(403, RESPONSE403)
     @product_ns.response(500, RESPONSE500)
@@ -65,7 +65,7 @@ class Product(Resource):
 
     @staticmethod
     @product_ns.doc('Update a product')
-    @product_ns.response(200, RESPONSE200, product_body_res)
+    @product_ns.response(200, RESPONSE200, product_model_res)
     @product_ns.response(400, RESPONSE400)
     @product_ns.response(401, RESPONSE401)
     @product_ns.response(403, RESPONSE403)
