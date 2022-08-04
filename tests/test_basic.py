@@ -1,3 +1,4 @@
+import pytest
 from flask import Flask, Blueprint
 from flask_restx import Api
 from flask_misc import fl_sql
@@ -8,99 +9,236 @@ from auth_api import auth_ns, RequestToken
 from product_db_model import ProductDbModel
 import os
 
-if os.path.exists("data.db"):
-    os.remove("data.db")
-
-app = Flask(__name__)
-bluePrint = Blueprint('api', __name__, url_prefix='/api')
-api = Api(bluePrint, doc='/doc', title='Sample Flask-RestPlus Application')
-app.register_blueprint(bluePrint)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['PROPAGATE_EXCEPTIONS'] = True
-
-api.add_namespace(product_ns)
-api.add_namespace(products_ns)
-api.add_namespace(offers_ns)
-api.add_namespace(auth_ns)
-
-product_ns.add_resource(Product, '/<int:prod_id>')
-products_ns.add_resource(ProductList, '')
-offers_ns.add_resource(OfferList, '')
-offers_ns.add_resource(ActiveOfferList, '/active')
-offers_ns.add_resource(ProductOfferList, '/product/<int:prod_id>')
-offers_ns.add_resource(VendorOfferList, '/vendor/<int:vendor_id>')
-offers_ns.add_resource(ProductAndVendorOfferHistoryList, '/product/<int:prod_id>/vendor/<int:vendor_id>')
-auth_ns.add_resource(RequestToken, '')
-
-with app.app_context():
-    fl_sql.init_app(app)
-    fl_sql.create_all()
-
 API_BASE_URL = 'http://localhost:5000/api'
 API_TOKEN = 'very_secret_key'
 
 
-# test product DB operations and also create a DB for further testing
-def test_add_products():
+def run_app():
+    if os.path.exists("data.db"):
+        os.remove("data.db")
+
+    app = Flask(__name__)
+    bluePrint = Blueprint('api', __name__, url_prefix='/api')
+    api = Api(bluePrint, doc='/doc', title='Sample Flask-RestPlus Application')
+    app.register_blueprint(bluePrint)
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['PROPAGATE_EXCEPTIONS'] = True
+
+    api.add_namespace(product_ns)
+    api.add_namespace(products_ns)
+    api.add_namespace(offers_ns)
+    api.add_namespace(auth_ns)
+
+    product_ns.add_resource(Product, '/<int:prod_id>')
+    products_ns.add_resource(ProductList, '')
+    offers_ns.add_resource(OfferList, '')
+    offers_ns.add_resource(ActiveOfferList, '/active')
+    offers_ns.add_resource(ProductOfferList, '/product/<int:prod_id>')
+    offers_ns.add_resource(VendorOfferList, '/vendor/<int:vendor_id>')
+    offers_ns.add_resource(ProductAndVendorOfferHistoryList, '/product/<int:prod_id>/vendor/<int:vendor_id>')
+    auth_ns.add_resource(RequestToken, '')
+
+    with app.app_context():
+        fl_sql.init_app(app)
+        fl_sql.create_all()
+
+    return app
+
+
+def test_add_single_product():
+    app = run_app()
     with app.app_context():
         apple = ProductDbModel(name='Apple', description='This is a red apple.')
-        apple.insert()
+        assert apple.insert()
         assert apple.prod_id == 1
         assert len(ProductDbModel.find_all()) == 1
-        assert apple.insert()
-        assert len(ProductDbModel.find_all()) == 1
-        banana = ProductDbModel(name='Banana', description='This is a banana')
-        banana.insert()
-        assert banana.prod_id == 2
-        assert len(ProductDbModel.find_all()) == 2
-        assert ProductDbModel.find_by_id(apple.prod_id) == apple
-        assert ProductDbModel.delete_by_id(1)
-        assert ProductDbModel.find_by_id(apple.prod_id) is None
-        assert len(ProductDbModel.find_all()) == 1
+
+
+def test_add_product_with_same_name():
+    app = run_app()
+    with app.app_context():
         apple = ProductDbModel(name='Apple', description='This is a red apple.')
-        apple.insert()
+        assert apple.insert()
+        another_apple = ProductDbModel(name='Apple', description='This is a green apple.')
+        assert not another_apple.insert()
+        assert len(ProductDbModel.find_all()) == 1
+
+
+def test_add_product_with_same_description():
+    app = run_app()
+    with app.app_context():
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
+        another_apple = ProductDbModel(name='RedApple', description='This is a green apple.')
+        assert another_apple.insert()
+        assert another_apple.prod_id == 2
         assert len(ProductDbModel.find_all()) == 2
+
+
+def test_find_existing_product():
+    app = run_app()
+    with app.app_context():
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
         assert ProductDbModel.find_by_id(apple.prod_id) == apple
-        assert apple.prod_id == 3
-        apple.update({'description': 'This is a green apple'})
-        assert ProductDbModel.find_by_id(apple.prod_id).description == 'This is a green apple'
-        apple.update({'name': 'Orange', 'description': 'This is an orange', 'something_else': 'ignored'})
-        orange = ProductDbModel.find_by_id(apple.prod_id)
-        assert orange.name == 'Orange' and orange.description == 'This is an orange'
-        assert ProductDbModel.find_by_name_exact('Orange') == orange
+        assert ProductDbModel.find_by_name_exact(apple.name) == apple
 
 
-def test_product_api():
+def test_find_non_existing_product():
+    app = run_app()
+    with app.app_context():
+        assert ProductDbModel.find_by_id(1) is None
+
+
+def test_remove_existing_product():
+    app = run_app()
+    with app.app_context():
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
+        assert ProductDbModel.delete_by_id(apple.prod_id)
+        assert ProductDbModel.find_by_id(apple.prod_id) is None
+
+
+def test_remove_non_existing_product():
+    app = run_app()
+    with app.app_context():
+        assert ProductDbModel.delete_by_id(1) is False
+
+
+def test_update_product():
+    app = run_app()
+    with app.app_context():
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
+        assert apple.update({'name': 'Orange', 'description': 'This is an orange'})
+        assert ProductDbModel.find_by_id(apple.prod_id).name == 'Orange'
+        assert ProductDbModel.find_by_id(apple.prod_id).description == 'This is an orange'
+
+
+def test_update_product_wrong_field():
+    app = run_app()
+    with app.app_context():
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
+        assert apple.update({'color': 'Red'})
+        with pytest.raises(AttributeError):
+            apple.color
+
+
+def test_update_product_primary_key():
+    app = run_app()
+    with app.app_context():
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
+        assert apple.update({'prod_id': 2})
+        assert ProductDbModel.find_by_id(2) == apple
+
+
+def test_update_product_primary_key_to_existing_value():
+    app = run_app()
+    with app.app_context():
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
+        orange = ProductDbModel(name='Orange', description='This is an orange')
+        assert orange.insert()
+        assert apple.update({'prod_id': 2}) is False
+        assert ProductDbModel.find_by_id(apple.prod_id) == apple
+
+
+def test_find_all():
+    app = run_app()
+    with app.app_context():
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
+        orange = ProductDbModel(name='Orange', description='This is an orange')
+        assert orange.insert()
+        products = ProductDbModel.find_all()
+        assert len(products) == 2
+        assert products[0].name == 'Apple'
+        assert products[1].name == 'Orange'
+
+
+def test_product_api_not_found():
+    app = run_app()
     app.testing = True
     client = app.test_client()
-    response = client.get(API_BASE_URL + '/product')
-    assert response.status_code == 404
-    response = client.get(API_BASE_URL + '/products')
-    assert response.status_code == 401
-    response = client.get(API_BASE_URL + '/products', headers={'Bearer': API_TOKEN + 'wrong'})
-    assert response.status_code == 403
-    response = client.get(API_BASE_URL + '/products', headers={'Bearer': API_TOKEN})
-    assert response.status_code == 200
-    assert len(response.json) == 2
-    for product in response.json:
-        assert product['name'] != 'Apple'
-    response = client.post(API_BASE_URL + '/products', headers={'Bearer': API_TOKEN},
-                           json={'name': 'Watermelon', 'description': 'A big juicy watermelon'})
-    assert response.status_code == 201
-    w_id = response.json['prod_id']
-    response = client.get(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN})
-    assert response.status_code == 200
-    assert response.json['name'] == 'Watermelon'
-    response = client.patch(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN},
-                            json={'description': 'Old watermelon'})
-    assert response.status_code == 200
-    assert response.json['description'] == 'Old watermelon'
-    response = client.patch(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN},
-                            json={'wrong': 'not_exists'})
-    assert response.status_code == 400
-    response = client.delete(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN})
-    assert response.status_code == 204
-    response = client.delete(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN})
-    assert response.status_code == 200
+    with app.app_context():
+        response = client.get(API_BASE_URL + '/product')
+        assert response.status_code == 404
+
+
+def test_unauthorized_api_request():
+    app = run_app()
+    app.testing = True
+    client = app.test_client()
+    with app.app_context():
+        response = client.get(API_BASE_URL + '/products')
+        assert response.status_code == 401
+
+
+def test_unauthorized_api_request():
+    app = run_app()
+    app.testing = True
+    client = app.test_client()
+    with app.app_context():
+        response = client.get(API_BASE_URL + '/products', headers={'Bearer': API_TOKEN + 'wrong'})
+        assert response.status_code == 403
+
+
+def test_api_create_product():
+    app = run_app()
+    app.testing = True
+    client = app.test_client()
+    with app.app_context():
+        response = client.post(API_BASE_URL + '/products', headers={'Bearer': API_TOKEN},
+                               json={'name': 'Watermelon', 'description': 'A big juicy watermelon'})
+        assert response.status_code == 201
+
+
+def test_api_retrieve_and_delete_product():
+    app = run_app()
+    app.testing = True
+    client = app.test_client()
+    with app.app_context():
+        response = client.post(API_BASE_URL + '/products', headers={'Bearer': API_TOKEN},
+                               json={'name': 'Watermelon', 'description': 'A big juicy watermelon'})
+        w_id = response.json['prod_id']
+        response = client.get(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN})
+        assert response.status_code == 200
+        assert response.json['name'] == 'Watermelon'
+        response = client.delete(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN})
+        assert response.status_code == 204
+        response = client.delete(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN})
+        assert response.status_code == 200
+        assert response.json['message'] is not None
+        response = client.get(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN})
+        assert response.status_code == 200
+        assert len(response.json) == 0
+
+
+def test_api_patch_product():
+    app = run_app()
+    app.testing = True
+    client = app.test_client()
+    with app.app_context():
+        response = client.post(API_BASE_URL + '/products', headers={'Bearer': API_TOKEN},
+                               json={'name': 'Watermelon', 'description': 'A big juicy watermelon'})
+        w_id = response.json['prod_id']
+        response = client.patch(API_BASE_URL + f'/product/10', headers={'Bearer': API_TOKEN},
+                                json={'description': 'Old watermelon'})
+        assert response.status_code == 200
+        assert len(response.json) == 0
+        response = client.patch(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN},
+                                json={'description': 'Old watermelon'})
+        assert response.status_code == 200
+        assert response.json['description'] == 'Old watermelon'
+        response = client.patch(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN},
+                                json={'description': 'Old watermelon', 'not_exist': 'wrong'})
+        assert response.status_code == 400
+        response = client.post(API_BASE_URL + '/products', headers={'Bearer': API_TOKEN},
+                               json={'name': 'Apple', 'description': 'This is a big red apple.'})
+        response = client.patch(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN},
+                                json={'name': 'Apple'})
+        assert response.status_code == 400
