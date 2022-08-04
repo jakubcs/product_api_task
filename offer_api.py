@@ -145,5 +145,8 @@ class ProductAndVendorOfferHistoryList(Resource):
         for offer in offer_list:
             price_history_data.append(PriceHistoryItem(price=offer.price, date_created=str(offer.date_created)))
         price_history = PriceHistory(prod_id=prod_id, vendor_id=vendor_id, history=price_history_data)
-        price_history.price_change = (offer.price - offer_list[0].price) / offer.price * 100
+        if offer.price < offer_list[0].price:
+            price_history.price_change = - (offer.price - offer_list[0].price) / offer.price * 100
+        else:
+            price_history.price_change = (offer.price - offer_list[0].price) / offer_list[0].price * 100
         return price_history.to_json(), 200
