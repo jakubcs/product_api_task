@@ -69,7 +69,6 @@ class OffersClient(threading.Thread):
                             offer_data.insert()
                     else:
                         print(f'Offers service request returned {response.status_code} status code!')
-                print(self.exit_loop)
                 time.sleep(1)
 
     def register_product(self, product: ProductDbModel) -> "bool":
