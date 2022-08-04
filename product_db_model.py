@@ -1,5 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-
+from typing import List
 from flask_misc import fl_sql
 
 NAME_MAX_LENGTH = 100
