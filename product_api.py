@@ -32,7 +32,12 @@ class Product(Resource):
     @product_ns.response(500, RESPONSE500)
     def get(prod_id: int) -> "(str, int)":
         """
-        Get a product
+        Get a product by product ID
+
+        :param prod_id: Product ID (int)
+        :returns:
+            - info - 'str' json representing product or 'message' info if not successful
+            - sc - 'int' representing HTTP status code
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
@@ -52,7 +57,12 @@ class Product(Resource):
     @product_ns.response(403, RESPONSE403)
     def delete(prod_id: int) -> "(str, int)":
         """
-        Delete a product
+        Delete a product by product ID
+
+        :param prod_id: Product ID (int)
+        :returns:
+            - info - 'str' 'message' info
+            - sc - 'int' representing HTTP status code
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
@@ -73,6 +83,11 @@ class Product(Resource):
     def patch(prod_id: int) -> "(str, int)":
         """
         Update a product
+
+        :param prod_id: Product ID (int)
+        :returns:
+            - info - 'str' json representing product or 'message' info if not successful
+            - sc - 'int' representing HTTP status code
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
@@ -106,6 +121,10 @@ class ProductList(Resource):
     def get() -> "(str, int)":
         """
         Get list of all products
+
+        :returns:
+            - info - 'str' json representing list of products or 'message' info if not successful
+            - sc - 'int' representing HTTP status code
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
@@ -123,6 +142,10 @@ class ProductList(Resource):
     def post(self) -> "(str, int)":
         """
         Create a new product
+
+        :returns:
+            - info - 'str' json representing product or 'message' info if not successful
+            - sc - 'int' representing HTTP status code
         """
         msg, auth_check = evaluate_token(request.headers.get('Bearer'))
         if auth_check != 200:
@@ -145,5 +168,7 @@ class ProductList(Resource):
         is_created = product_data.insert()
         if not is_created:
             return {'message': 'Internal server error'}, 500
-        off_cli.register_product(product_data)
-        return product_schema.dump(product_data), 201
+        if off_cli.register_product(product_data):
+            return product_schema.dump(product_data), 201
+        else:
+            return {'message': 'Internal server error'}, 500

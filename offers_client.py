@@ -15,6 +15,11 @@ offer_schema = OfferDbSchema()
 
 class OffersClient(threading.Thread):
     def __init__(self):
+        """
+        Initialize OffersClient object that acts as a client to external offers API
+
+        :raises KeyError: If authorization code for external API was not retrieved
+        """
         super().__init__()
         self.exit_loop = False
         self.base_url = os.environ['OFFER_BASE_URL']
@@ -26,14 +31,23 @@ class OffersClient(threading.Thread):
             if response.status_code == 201:
                 self.auth_code = response.json()
             else:
-                print('Could not request new authorization code.')
+                print('Could not retrieve new authorization code.')
                 raise e
         self.app = None
 
     def define_app_context(self, app: Flask):
+        """
+        Define app context for DB operations
+
+        :param app: App used as context (Flask)
+        """
         self.app = app
 
     def run(self, *args, **kwargs):
+        """
+        Thread function that periodically requests new offers for each product in product database.
+        Offers that have at least one item in stock are then inserted to offer database
+        """
         self.exit_loop = False
         with self.app.app_context():
             while not self.exit_loop:
@@ -55,16 +69,20 @@ class OffersClient(threading.Thread):
                             offer_data.insert()
                     else:
                         print(f'Offers service request returned {response.status_code} status code!')
-                time.sleep(30)
+                print(self.exit_loop)
+                time.sleep(1)
 
-    def __del__(self):
-        self.exit_loop = True
+    def register_product(self, product: ProductDbModel) -> "bool":
+        """
+        Call to external API to register a new product
 
-    def register_product(self, product) -> "str":
+        :param product: json representation of the product (ProductDbModel)
+        :returns: 'bool' representing the success of the operation
+        """
         response = requests.post(self.base_url + '/products/register',
                                  headers={'Bearer': f'{self.auth_code}'},
                                  json=product_schema.dump(product), verify=False)
-        return response.json()
+        return response.status_code == 201
 
 
 off_cli = OffersClient()

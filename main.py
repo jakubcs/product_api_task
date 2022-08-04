@@ -8,6 +8,7 @@ from marshmallow import ValidationError
 from offers_client import off_cli
 from auth_api import auth_ns, RequestToken
 
+# Set up the application and API
 app = Flask(__name__)
 bluePrint = Blueprint('api', __name__, url_prefix='/api')
 api = Api(bluePrint, doc='/doc', title='Product API task',
@@ -18,11 +19,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['PROPAGATE_EXCEPTIONS'] = True
 
+# Add required namespaces to API
 api.add_namespace(product_ns)
 api.add_namespace(products_ns)
 api.add_namespace(offers_ns)
 api.add_namespace(auth_ns)
 
+# Add resources to relevant namespace
 product_ns.add_resource(Product, '/<int:prod_id>')
 products_ns.add_resource(ProductList, '')
 offers_ns.add_resource(OfferList, '')
@@ -49,4 +52,4 @@ if __name__ == '__main__':
     off_cli.define_app_context(app)
     off_cli.start()
     app.run(port=5000, debug=False, host='0.0.0.0')
-    del off_cli
+    off_cli.exit_loop = True
