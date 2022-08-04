@@ -1,12 +1,15 @@
+import json
+
 import pytest
 from flask import Flask, Blueprint
 from flask_restx import Api
 from flask_misc import fl_sql
 from product_api import product_ns, products_ns, Product, ProductList
 from offer_api import offers_ns, OfferList, ActiveOfferList, VendorOfferList, ProductOfferList, \
-    ProductAndVendorOfferHistoryList
+    ProductAndVendorOfferHistoryList, offer_list_schema
 from auth_api import auth_ns, RequestToken
 from product_db_model import ProductDbModel
+from offer_db_model import OfferDbModel
 import os
 
 API_BASE_URL = 'http://localhost:5000/api'
@@ -242,3 +245,77 @@ def test_api_patch_product():
         response = client.patch(API_BASE_URL + f'/product/{w_id}', headers={'Bearer': API_TOKEN},
                                 json={'name': 'Apple'})
         assert response.status_code == 400
+
+
+def test_offer_db_operation():
+    app = run_app()
+    with app.app_context():
+        offer_inactive = OfferDbModel(vendor_id=1000, price=100, items_in_stock=10, prod_id=1)
+        offer_unique = OfferDbModel(vendor_id=2000, price=200, items_in_stock=20, prod_id=2)
+        offer_active = OfferDbModel(vendor_id=1000, price=300, items_in_stock=30, prod_id=1)
+        assert offer_inactive.insert()
+        assert offer_unique.insert()
+        assert offer_inactive.active
+        assert offer_unique.active
+        assert offer_active.insert()
+        assert not offer_inactive.active
+        assert offer_active.active
+        assert offer_inactive.product is None
+        apple = ProductDbModel(name='Apple', description='This is a red apple.')
+        assert apple.insert()
+        assert offer_inactive.product == apple
+        offers = OfferDbModel.find_all()
+        assert len(offers)
+        assert offers[0] == offer_inactive
+        assert offers[2] == offer_active
+        active_offers = [offer_unique, offer_active]
+        same_product_and_vendor_offers = [offer_inactive, offer_active]
+        assert OfferDbModel.find_by_prod_id(offer_inactive.prod_id) == same_product_and_vendor_offers
+        assert OfferDbModel.find_by_vendor_id(offer_inactive.vendor_id) == same_product_and_vendor_offers
+        assert len(OfferDbModel.find_by_prod_id(offer_inactive.prod_id + 100)) == 0
+        assert len(OfferDbModel.find_by_vendor_id(offer_inactive.vendor_id + 100)) == 0
+        assert OfferDbModel.find_by_prod_id_and_vendor_id_between_dates(prod_id=offer_inactive.prod_id,
+                                                                        vendor_id=offer_inactive.vendor_id,
+                                                                        date_start="0001-01-01T00:00:00.000000",
+                                                                        date_end="3000-01-01T00:00:00.000000") \
+               == same_product_and_vendor_offers
+        assert len(OfferDbModel.find_by_prod_id_and_vendor_id_between_dates(prod_id=offer_inactive.prod_id,
+                                                                            vendor_id=offer_inactive.vendor_id,
+                                                                            date_start="3000-01-01T00:00:00.000000",
+                                                                            date_end="0001-01-01T00:00:00.000000")) == 0
+        assert OfferDbModel.find_all_active() == active_offers
+
+
+def test_offer_api():
+    app = run_app()
+    app.testing = True
+    client = app.test_client()
+    with app.app_context():
+        offer_inactive = OfferDbModel(vendor_id=1000, price=100, items_in_stock=10, prod_id=1)
+        offer_unique = OfferDbModel(vendor_id=2000, price=200, items_in_stock=20, prod_id=2)
+        offer_active = OfferDbModel(vendor_id=1000, price=300, items_in_stock=30, prod_id=1)
+        offer_inactive.insert()
+        offer_unique.insert()
+        offer_active.insert()
+        active_offers = [offer_unique, offer_active]
+        same_product_and_vendor_offers = [offer_inactive, offer_active]
+        offers = [offer_inactive, offer_unique, offer_active]
+        response = client.get(API_BASE_URL + '/offers', headers={'Bearer': API_TOKEN})
+        assert response.status_code == 200
+        assert response.json == offer_list_schema.dump(offers)
+        response = client.get(API_BASE_URL + '/offers/active', headers={'Bearer': API_TOKEN})
+        assert response.status_code == 200
+        assert response.json == offer_list_schema.dump(active_offers)
+        response = client.get(API_BASE_URL + f'/offers/product/{offer_inactive.prod_id}', headers={'Bearer': API_TOKEN})
+        assert response.status_code == 200
+        assert response.json == offer_list_schema.dump(same_product_and_vendor_offers)
+        response = client.get(API_BASE_URL + f'/offers/vendor/{offer_inactive.vendor_id}',
+                              headers={'Bearer': API_TOKEN})
+        assert response.status_code == 200
+        assert response.json == offer_list_schema.dump(same_product_and_vendor_offers)
+        response = client.post(
+            API_BASE_URL + f'/offers/product/{offer_inactive.prod_id}/vendor/{offer_inactive.vendor_id}',
+            json={'date_start': '0001-01-01T00:00:00.000000', 'date_end': '3000-01-01T00:00:00.000000'},
+            headers={'Bearer': API_TOKEN})
+        assert response.status_code == 200
+        assert json.loads(response.json)['price_change'] == 200
