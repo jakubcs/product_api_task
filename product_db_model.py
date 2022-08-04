@@ -1,3 +1,5 @@
+from sqlalchemy.exc import IntegrityError
+
 from flask_misc import fl_sql
 
 NAME_MAX_LENGTH = 100
@@ -39,14 +41,23 @@ class ProductDbModel(fl_sql.Model):
         return f'Product prod_id = {self.prod_id}, name = "{self.name}", description = "{self.description}"'
 
     def insert(self) -> "bool":
-        fl_sql.session.add(self)
-        fl_sql.session.commit()
+        try:
+            fl_sql.session.add(self)
+            fl_sql.session.commit()
+        except IntegrityError:
+            fl_sql.session.rollback()
+            return False
         return True
 
     def update(self, data) -> "bool":
-        for key, value in data.items():
-            setattr(self, key, value)
-        fl_sql.session.commit()
+        try:
+            for key, value in data.items():
+                if hasattr(self, key):
+                    setattr(self, key, value)
+            fl_sql.session.commit()
+        except IntegrityError:
+            fl_sql.session.rollback()
+            return False
         return True
 
     @classmethod

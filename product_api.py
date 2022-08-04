@@ -93,7 +93,7 @@ class Product(Resource):
                     # del req_data[key]
             is_updated = product.update(request.get_json())
             if not is_updated:
-                return {'message': 'Internal server error'}, 500
+                return {'message': 'Tried to update unique attribute to already existing value'}, 400
             return product_schema.dump(product), 200
 
 
