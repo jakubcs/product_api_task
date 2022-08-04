@@ -1,5 +1,9 @@
 from datetime import datetime
 from operator import and_
+
+from sqlalchemy.exc import IntegrityError
+from typing import List
+
 from flask_misc import fl_sql
 
 
@@ -32,12 +36,27 @@ class OfferDbModel(fl_sql.Model):
         self.active = True
 
     def __repr__(self):
-        return f'Offer internal_id = {self.internal_id}, vendor_id = {self.vendor_id}, price = {self.price}, items_in_stock = {self.items_in_stock}, active = {self.active}, date_created = {self.date_created}, prod_id = {self.prod_id}'
+        return f'Offer internal_id = {self.internal_id}, vendor_id = {self.vendor_id}, price = {self.price}' \
+               f', items_in_stock = {self.items_in_stock}, active = {self.active}, date_created = {self.date_created}' \
+               f', prod_id = {self.prod_id}'
 
     def insert(self) -> "bool":
-        fl_sql.session.add(self)
-        fl_sql.session.commit()
-        return True
+        query_data = self.find_by_prod_and_vendor_id_active(prod_id=self.prod_id, vendor_id=self.vendor_id)
+        if query_data is not None:
+            # unless it has the same price and items in stock -> we don't need duplicates
+            if query_data.price != self.price or \
+                    query_data.items_in_stock != self.items_in_stock:
+                print(f'Deactivate: {query_data}')
+                setattr(query_data, 'active', False)
+            else:
+                return False
+        try:
+            fl_sql.session.add(self)
+            fl_sql.session.commit()
+            return True
+        except IntegrityError:
+            fl_sql.session.rollback()
+            return False
 
     @classmethod
     def find_by_vendor_id(cls, vendor_id) -> "List[OfferDbModel]":
@@ -64,8 +83,8 @@ class OfferDbModel(fl_sql.Model):
         return cls.query.all()
 
     @classmethod
-    def find_by_prod_id_and_vendor_id_between_dates(cls, prod_id: int, vendor_id: int, date_start: datetime,
-                                                    date_end: datetime) -> "List[OfferDbModel]":
+    def find_by_prod_id_and_vendor_id_between_dates(cls, prod_id: int, vendor_id: int, date_start: str,
+                                                    date_end: str) -> "List[OfferDbModel]":
         from_date = datetime.strptime(date_start, '%Y-%m-%dT%H:%M:%S.%f')
         to_date = datetime.strptime(date_end, '%Y-%m-%dT%H:%M:%S.%f')
         return cls.query.filter_by(prod_id=prod_id, vendor_id=vendor_id).filter(

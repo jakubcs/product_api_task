@@ -52,22 +52,7 @@ class OffersClient(threading.Thread):
                                                       items_in_stock=item['items_in_stock'], prod_id=product_id)
                             if offer_data.items_in_stock == 0:
                                 continue
-                            query_data = OfferDbModel.find_by_prod_and_vendor_id_active(
-                                prod_id=offer_data.prod_id, vendor_id=offer_data.vendor_id)
-                            # same product from the same vendor exists and is active? deactivate it
-                            if query_data is not None:
-                                # unless it has the same price and items in stock -> we don't need duplicates
-                                if query_data.price != offer_data.price or \
-                                        query_data.items_in_stock != offer_data.items_in_stock:
-                                    print(f'Deactivate: {query_data}')
-                                    setattr(query_data, 'active', False)
-                                    is_inserted = offer_data.insert()
-                                    if not is_inserted:
-                                        print(f'Could not insert offer = {offer_data.__repr__()}')
-                            else:
-                                is_inserted = offer_data.insert()
-                                if not is_inserted:
-                                    print(f'Could not insert offer = {offer_data.__repr__()}')
+                            offer_data.insert()
                     else:
                         print(f'Offers service request returned {response.status_code} status code!')
                 time.sleep(30)
