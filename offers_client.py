@@ -7,7 +7,7 @@ from product_db_schema import ProductDbSchema
 from offer_db_model import OfferDbModel
 from offer_db_schema import OfferDbSchema
 from product_db_model import ProductDbModel
-import os
+from os import environ
 
 product_schema = ProductDbSchema()
 offer_schema = OfferDbSchema()
@@ -22,11 +22,11 @@ class OffersClient(threading.Thread):
         """
         super().__init__()
         self.exit_loop = False
-        self.base_url = os.environ['OFFER_BASE_URL']
+        self.base_url = environ['OFFER_BASE_URL']
         if self.base_url == '':
             raise ValueError('OFFER_BASE_URL variable provided, but it an empty string')
         try:
-            self.auth_code = os.environ['OFFER_AUTH_CODE']
+            self.auth_code = environ['OFFER_AUTH_CODE']
             if self.auth_code == '':
                 raise ValueError('OFFER_AUTH_CODE variable provided, but it an empty string')
         except KeyError as e:
