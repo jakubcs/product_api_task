@@ -7,6 +7,7 @@ from marshmallow import ValidationError
 from offers_client import off_cli
 from auth_api import evaluate_token
 from flask_misc import RESPONSE200, RESPONSE201, RESPONSE204, RESPONSE400, RESPONSE401, RESPONSE403, RESPONSE500
+import os
 
 product_ns = Namespace('product', description='Product related operations')
 products_ns = Namespace('products', description='Products related operations')
@@ -155,7 +156,7 @@ class ProductList(Resource):
         try:
             found_product = ProductDbModel.find_by_name_exact(name)
         except MultipleResultsFound:
-            return {'message': RESPONSE500}, 500
+            return {'message': f'{RESPONSE500} - multiple objects with the same name found'}, 500
 
         if found_product is not None:
             return {'message': 'Product with a same name already exists.'}, 400
@@ -167,8 +168,8 @@ class ProductList(Resource):
 
         is_created = product_data.insert()
         if not is_created:
-            return {'message': 'Internal server error'}, 500
+            return {'message': 'Internal server error - object not created'}, 500
         if off_cli.register_product(product_data):
             return product_schema.dump(product_data), 201
         else:
-            return {'message': 'Internal server error'}, 500
+            return {'message': 'Internal server error - object not registered'}, 500
