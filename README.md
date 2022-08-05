@@ -1,9 +1,9 @@
 # product_api_task
 
 Before start, make sure that you have defined OFFER_BASE_URL environmental variable equal to the base URL of the
-external offers' microservice. Optionally, you can define OFFER_AUTH_CODE environmental variable if you don't have a
+external offers microservice. Optionally, you can define OFFER_AUTH_CODE environmental variable if you have a
 token to access this microservice. If this environmental variable is not set, the application will automatically request
-a new token from the offers' microservice (note: to export variables while creating docker container, you can use .env
+a new token from the offers microservice (note: to export variables while creating docker container, you can use .env
 file with VAR_NAME=VAR_VALUE rows).
 
 Upon starting the app, API documentation can be found at base_url/api/doc. Except for /auth POST request, every request
