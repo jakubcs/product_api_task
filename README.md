@@ -18,3 +18,9 @@ databases just before receiving a first request.
 
 In 'tests' folder, there is also a file called 'test_basic.py' that defines several simple scenarios to test basic
 functionality.
+
+Project also contains Dockerfile and docker-compose.yml and therefore should be able to run in Docker (tested in ubuntu
+environment using commands docker-compose build and docker-compose up).
+
+This app is also deployed to Heroku and should be running (verify by
+checking [API documentation](https://product-api-task.herokuapp.com/api/doc)).
