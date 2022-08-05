@@ -7,6 +7,7 @@ from offer_api import offers_ns, OfferList, ActiveOfferList, VendorOfferList, Pr
 from marshmallow import ValidationError
 from offers_client import off_cli
 from auth_api import auth_ns, RequestToken
+from os import environ
 
 # Set up the application and API
 app = Flask(__name__)
@@ -51,5 +52,5 @@ if __name__ == '__main__':
     fl_mar.init_app(app)
     off_cli.define_app_context(app)
     off_cli.start()
-    app.run(port=5000, debug=False, host='0.0.0.0')
+    app.run(port=environ.get("PORT", 5000), debug=False, host='0.0.0.0')
     off_cli.exit_loop = True
