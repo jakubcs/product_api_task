@@ -3,7 +3,8 @@
 Before start, make sure that you have defined OFFER_BASE_URL environmental variable equal to the base URL of the
 external offers' microservice. Optionally, you can define OFFER_AUTH_CODE environmental variable if you don't have a
 token to access this microservice. If this environmental variable is not set, the application will automatically request
-a new token from the offers' microservice.
+a new token from the offers' microservice (note: to export variables while creating docker container, you can use .env
+file with VAR_NAME=VAR_VALUE rows).
 
 Upon starting the app, API documentation can be found at base_url/api/doc. Except for /auth POST request, every request
 must be accompanied by header containing bearer token; e.g., assuming base_url=http://localhost:5000 and windows command
