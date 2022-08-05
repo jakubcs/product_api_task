@@ -57,7 +57,6 @@ class OfferDbModel(fl_sql.Model):
             # unless it has the same price and items in stock -> we don't need duplicates
             if query_data.price != self.price or \
                     query_data.items_in_stock != self.items_in_stock:
-                print(f'Deactivate: {query_data}')
                 setattr(query_data, 'active', False)
             else:
                 return False
