@@ -23,11 +23,15 @@ class OffersClient(threading.Thread):
         super().__init__()
         self.exit_loop = False
         self.base_url = os.environ['OFFER_BASE_URL']
+        if self.base_url == '':
+            raise ValueError('OFFER_BASE_URL variable provided, but it an empty string')
         try:
             self.auth_code = os.environ['OFFER_AUTH_CODE']
+            if self.auth_code == '':
+                raise ValueError('OFFER_AUTH_CODE variable provided, but it an empty string')
         except KeyError as e:
             print('Requesting new authorization code.')
-            response = requests.get(self.base_url + '/auth')
+            response = requests.post(self.base_url + '/auth')
             if response.status_code == 201:
                 self.auth_code = response.json()
             else:
