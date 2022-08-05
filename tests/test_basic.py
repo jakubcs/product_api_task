@@ -12,17 +12,20 @@ from product_db_model import ProductDbModel
 from offer_db_model import OfferDbModel
 import os
 
-API_BASE_URL = 'http://localhost:5000/api'
+port = os.environ.get("PORT", 5000)
+
+API_BASE_URL = f'http://localhost:{port}/api'
 API_TOKEN = 'very_secret_key'
 
+path_to_db = f'{os.path.dirname(os.path.abspath(__file__))}/data.db'
 
 def run_app():
-    if os.path.exists("data.db"):
-        os.remove("data.db")
+    if os.path.exists(path_to_db):
+        os.remove(path_to_db)
 
     app = Flask(__name__)
     bluePrint = Blueprint('api', __name__, url_prefix='/api')
-    api = Api(bluePrint, doc='/doc', title='Sample Flask-RestPlus Application')
+    api = Api(bluePrint, doc='/doc', title='Product API task')
     app.register_blueprint(bluePrint)
 
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
