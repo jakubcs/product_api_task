@@ -11,6 +11,10 @@ WORKDIR ${PROJECT_DIR}
 
 COPY . .
 
+RUN apk update && apk add python3-dev \ 
+                        gcc \ 
+                        libc-dev \
+                        g++
 RUN pip install -r requirements.txt
 
 EXPOSE 5000
